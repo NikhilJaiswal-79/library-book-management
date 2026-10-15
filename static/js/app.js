@@ -138,8 +138,6 @@ async function loadDashboardData() {
       document.getElementById("kpiActiveLoans").textContent = kpis.active_loans;
       document.getElementById("kpiOverdueLoans").textContent = kpis.overdue_loans;
       document.getElementById("kpiBorrowers").textContent = kpis.registered_borrowers;
-      document.getElementById("kpiReturnRate").textContent = `${kpis.return_rate}%`;
-      document.getElementById("kpiTotalLoans").textContent = `${kpis.total_loans} total circulation events`;
 
       // Update sidebar badge
       const overdueBadge = document.getElementById("overdueBadge");

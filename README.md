@@ -25,7 +25,7 @@ A modern library circulation management and usage analytics web platform built w
 The web platform is accessible at **`http://127.0.0.1:8000`** with intuitive sidebar navigation:
 
 ### 1. 📊 Dashboard (`#dashboard`)
-* **Real-time KPI Tiles**: Tracks Total Titles, Copies In Stock, Active Loans, Overdue Loans, and Return Rate (%).
+* **Real-time KPI Tiles**: Tracks Total Titles, Copies In Stock, Active Loans, Overdue Loans, and Registered Members.
 * **Interactive Preview Vector Charts**: Live Chart.js bar and line charts (no static images!).
 * **Active Loans Priority Queue**: Real-time loan countdown and overdue badges (`🔴 11 Days Overdue` / `🟢 Active`).
 
