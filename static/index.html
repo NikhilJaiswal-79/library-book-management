@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Usage Analysis & Circulation System</title>
+  <meta name="description" content="Circulation management and usage analytics platform for libraries. Track book loans, manage inventory, identify overdue accounts, and visualize borrowing trends.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js for High Performance Interactive HTML5 Vector Charts (No Images) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ==================== SIDEBAR NAVIGATION ==================== -->
+  <aside class="sidebar" id="appSidebar">
+    <div class="sidebar-header">
+      <div class="brand-icon">📚</div>
+      <div class="brand-info">
+        <h1>LibAnalytics</h1>
+        <span>Usage & Circulation</span>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <button id="navDashboard" class="active" onclick="switchView('dashboard')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Dashboard</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button id="navBooks" onclick="switchView('books')">
+          <span class="nav-icon">📖</span>
+          <span class="nav-text">Book Catalogue</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button id="navAddBook" onclick="switchView('addBook')" style="border-left: 2px solid var(--accent-cyan);">
+          <span class="nav-icon">➕</span>
+          <span class="nav-text">Add New Book</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button id="navBorrowers" onclick="switchView('borrowers')">
+          <span class="nav-icon">👥</span>
+          <span class="nav-text">Borrowers</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button id="navCirculation" onclick="switchView('circulation')">
+          <span class="nav-icon">🔄</span>
+          <span class="nav-text">Circulation Desk</span>
+          <span class="nav-badge" id="overdueBadge" style="display:none;">0</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button id="navAnalytics" onclick="switchView('analytics')">
+          <span class="nav-icon">📈</span>
+          <span class="nav-text">Analytics & Charts</span>
+        </button>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+  <div class="main-wrapper">
+
+    <!-- Sticky Top Navbar -->
+    <header class="top-navbar">
+      <div class="page-title-group">
+        <h2 id="viewHeading">Circulation Dashboard</h2>
+        <p id="viewSubheading">Real-time library usage metrics and active loans</p>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-secondary btn-sm" id="btnRefreshData" onclick="refreshCurrentView()">
+          <span>🔄</span> Refresh
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btnNavToAddBookTop" onclick="switchView('addBook')">
+          <span>➕</span> Add New Book
+        </button>
+        <button class="btn btn-primary btn-sm" id="btnQuickIssueTop" onclick="switchView('circulation')">
+          <span>⚡</span> Issue Book
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Content Container -->
+    <main class="content-container">
+
+      <!-- ==================== VIEW 1: DASHBOARD ==================== -->
+      <section id="viewDashboard" class="view-section active">
+        <!-- Live KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Titles</span>
+              <span class="kpi-icon">📚</span>
+            </div>
+            <div class="kpi-value" id="kpiTotalTitles">-</div>
+            <div class="kpi-subtext" id="kpiAvailableCopies">0 copies in stock</div>
+          </div>
+
+          <div class="kpi-card success">
+            <div class="kpi-header">
+              <span class="kpi-title">Active Loans</span>
+              <span class="kpi-icon">🔄</span>
+            </div>
+            <div class="kpi-value" id="kpiActiveLoans">-</div>
+            <div class="kpi-subtext">Currently checked out</div>
+          </div>
+
+          <div class="kpi-card danger">
+            <div class="kpi-header">
+              <span class="kpi-title">Overdue Loans</span>
+              <span class="kpi-icon">⚠️</span>
+            </div>
+            <div class="kpi-value" id="kpiOverdueLoans">-</div>
+            <div class="kpi-subtext">Requires immediate return</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Registered Members</span>
+              <span class="kpi-icon">👥</span>
+            </div>
+            <div class="kpi-value" id="kpiBorrowers">-</div>
+            <div class="kpi-subtext">Active student accounts</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Return Rate</span>
+              <span class="kpi-icon">🎯</span>
+            </div>
+            <div class="kpi-value" id="kpiReturnRate">-%</div>
+            <div class="kpi-subtext" id="kpiTotalLoans">0 total circulation events</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Interactive Vector Charts (No Images) -->
+        <div class="charts-grid" style="margin-bottom: 28px;">
+          <div class="chart-card">
+            <h4>
+              <span>📊 Top Borrowed Books (Interactive)</span>
+              <span style="font-size:11px; color:var(--accent-cyan); font-weight:normal;">Live Vector Chart</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="dashPopularCanvas"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h4>
+              <span>📈 Monthly Circulation Trajectory</span>
+              <span style="font-size:11px; color:var(--accent-emerald); font-weight:normal;">Live Vector Chart</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="dashTrendsCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Loans Priority Queue -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>⏳</span> Active Loans Priority Queue</h3>
+            <button class="btn btn-secondary btn-sm" onclick="switchView('circulation')">
+              View All Circulation Desk →
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="dashboardActiveLoansTable">
+              <thead>
+                <tr>
+                  <th>Loan ID</th>
+                  <th>Book Title</th>
+                  <th>Borrower</th>
+                  <th>Roll No</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardActiveLoansBody">
+                <tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-dim);">Loading active loans...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 2: BOOK CATALOGUE ==================== -->
+      <section id="viewBooks" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>📖</span> Library Book Catalogue</h3>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <div class="search-bar-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="bookSearchInput" class="form-control" placeholder="Search by title, author, ISBN..." oninput="filterBooks()">
+              </div>
+              <select id="bookCategoryFilter" class="form-control" style="width: 170px;" onchange="filterBooks()">
+                <option value="">All Categories</option>
+              </select>
+              <button class="btn btn-primary" id="btnGoToAddBook" onclick="switchView('addBook')">
+                <span>➕</span> Add New Book
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="booksTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>ISBN</th>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>Category</th>
+                  <th>Available Copies</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="booksTableBody">
+                <tr><td colspan="7" style="text-align:center; padding:24px;">Loading catalogue...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 3: DEDICATED ADD NEW BOOK ==================== -->
+      <section id="viewAddBook" class="view-section">
+        <div class="add-book-grid">
+          <!-- Form Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title"><span>➕</span> Register New Book in Library</h3>
+            </div>
+            <form id="dedicatedAddBookForm" onsubmit="handleDedicatedAddBookSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" for="pageBookIsbn">ISBN Number *</label>
+                <input type="text" id="pageBookIsbn" class="form-control" placeholder="e.g. 978-0132350884" required oninput="updateLiveBookPreview()">
+                <small style="color:var(--text-dim); font-size:11px;">Must be a unique ISBN code.</small>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="pageBookTitle">Book Title *</label>
+                <input type="text" id="pageBookTitle" class="form-control" placeholder="e.g. Clean Code" required oninput="updateLiveBookPreview()">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="pageBookAuthor">Author(s) *</label>
+                <input type="text" id="pageBookAuthor" class="form-control" placeholder="e.g. Robert C. Martin" required oninput="updateLiveBookPreview()">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="pageBookCategory">Category / Genre *</label>
+                  <input type="text" id="pageBookCategory" class="form-control" list="categorySuggestions" placeholder="e.g. Computer Science" required oninput="updateLiveBookPreview()">
+                  <datalist id="categorySuggestions">
+                    <option value="Computer Science">
+                    <option value="Fiction">
+                    <option value="Science">
+                    <option value="Mathematics">
+                    <option value="History">
+                    <option value="Philosophy">
+                    <option value="Mystery">
+                    <option value="Economics">
+                  </datalist>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="pageBookCopies">Available Copies *</label>
+                  <input type="number" id="pageBookCopies" class="form-control" value="3" min="1" max="100" required oninput="updateLiveBookPreview()">
+                </div>
+              </div>
+
+              <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:12px;">
+                <button type="button" class="btn btn-secondary" onclick="resetAddBookForm()">
+                  Clear Fields
+                </button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitDedicatedAddBook">
+                  <span>💾</span> Add Book to Catalogue
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Live Book Shelf Preview Card -->
+          <div>
+            <div class="panel-header" style="margin-bottom:12px;">
+              <h4 style="font-size:14px; font-weight:700; color:var(--text-muted);">Live Shelf Preview</h4>
+            </div>
+            <div class="book-preview-card">
+              <span class="book-preview-badge" id="previewCategory">CATEGORY</span>
+              <div class="book-preview-title" id="previewTitle">Book Title Will Appear Here</div>
+              <div class="book-preview-author" id="previewAuthor">By Author Name</div>
+              <div class="book-preview-meta">
+                <span class="badge badge-in-stock" id="previewStock">● 3 Copies</span>
+                <span class="book-preview-isbn" id="previewIsbn">ISBN: 978-XXXXXXXXXX</span>
+              </div>
+            </div>
+            <p style="font-size:12px; color:var(--text-dim); margin-top:14px; line-height:1.5;">
+              Once added, this title will immediately be available in the catalogue, selectable in the circulation desk for loan checkout, and integrated into category analytics.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 4: BORROWERS ==================== -->
+      <section id="viewBorrowers" class="view-section">
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>👥</span> Registered Borrowers Directory</h3>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <div class="search-bar-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="borrowerSearchInput" class="form-control" placeholder="Search borrower name or roll no..." oninput="filterBorrowers()">
+              </div>
+              <button class="btn btn-primary" id="btnOpenAddBorrowerModal" onclick="openAddBorrowerModal()">
+                <span>➕</span> Register Borrower
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="borrowersTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Full Name</th>
+                  <th>Roll / Registration No.</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="borrowersTableBody">
+                <tr><td colspan="4" style="text-align:center; padding:24px;">Loading borrowers...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 5: CIRCULATION DESK ==================== -->
+      <section id="viewCirculation" class="view-section">
+        <!-- Issue Book Form Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>📤</span> Issue Book to Member</h3>
+          </div>
+          <form id="issueBookForm" onsubmit="handleIssueSubmit(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="issueBookSelect">Select Book (In Stock)</label>
+                <select id="issueBookSelect" class="form-control" required>
+                  <option value="">-- Choose Book --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="issueBorrowerSelect">Select Borrower</label>
+                <select id="issueBorrowerSelect" class="form-control" required>
+                  <option value="">-- Choose Borrower --</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="issueDateInput">Issue Date</label>
+                <input type="date" id="issueDateInput" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="loanDaysInput">Loan Period (Days)</label>
+                <input type="number" id="loanDaysInput" class="form-control" value="14" min="1" max="90" required>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+              <button type="submit" class="btn btn-primary" id="btnSubmitIssue">
+                <span>⚡</span> Complete Book Checkout
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Active Loans Management Table -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>📥</span> Active Loans & Overdue Check-in</h3>
+            <div class="search-bar-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="circulationSearchInput" class="form-control" placeholder="Search loan by title or borrower..." oninput="filterActiveLoans()">
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="activeLoansTable">
+              <thead>
+                <tr>
+                  <th>Loan ID</th>
+                  <th>Book Title</th>
+                  <th>Borrower</th>
+                  <th>Roll No</th>
+                  <th>Issued Date</th>
+                  <th>Due Date</th>
+                  <th>Circulation Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="activeLoansTableBody">
+                <tr><td colspan="8" style="text-align:center; padding:24px;">Loading loans...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 6: ANALYTICS & INTERACTIVE CHARTS ==================== -->
+      <section id="viewAnalytics" class="view-section">
+        <!-- Banner Header -->
+        <div class="panel" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));">
+          <div class="panel-header" style="margin-bottom:0;">
+            <div>
+              <h3 class="panel-title"><span>📈</span> Interactive Usage Analytics & Statistical Dashboard</h3>
+              <p style="font-size:13px; color:var(--text-muted); margin-top:4px;">
+                Visualized dynamically with <strong>Chart.js HTML5 Vector Canvas</strong> (no static images) and statistical computation powered by <strong>NumPy</strong> and <strong>Pandas</strong>.
+              </p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="loadAnalyticsData()">
+              <span>🔄</span> Refresh Charts & Stats
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Charts Grid (7 Vector Canvas Charts) -->
+        <div class="charts-grid" style="margin-bottom: 24px;">
+          <!-- Chart 1: Top Borrowed Books -->
+          <div class="chart-card">
+            <h4>
+              <span>🏆 Top Most-Borrowed Books</span>
+              <span style="font-size:11px; color:var(--primary); font-weight:600;">Horizontal Bar</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chartPopularCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Monthly Borrowing Trajectory -->
+          <div class="chart-card">
+            <h4>
+              <span>📅 Monthly Borrowing Trajectory</span>
+              <span style="font-size:11px; color:var(--accent-cyan); font-weight:600;">Multi-line Trend</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chartTrendsCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: Category Share -->
+          <div class="chart-card">
+            <h4>
+              <span>🍩 Circulation Share by Genre / Category</span>
+              <span style="font-size:11px; color:var(--accent-purple); font-weight:600;">Doughnut</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chartCategoryCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 4: Duration Distribution -->
+          <div class="chart-card">
+            <h4>
+              <span>⏱️ Loan Duration Frequency Distribution (NumPy Binned)</span>
+              <span style="font-size:11px; color:var(--accent-amber); font-weight:600;">Histogram Bar</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chartDurationCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 5: Top Borrowers -->
+          <div class="chart-card">
+            <h4>
+              <span>👥 Most Active Borrowers Leaderboard</span>
+              <span style="font-size:11px; color:var(--accent-emerald); font-weight:600;">Reader Activity</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chartBorrowersCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 6: Inventory Allocation -->
+          <div class="chart-card">
+            <h4>
+              <span>📦 Inventory Allocation & Stock Status</span>
+              <span style="font-size:11px; color:var(--primary); font-weight:600;">Shelf vs On-Loan</span>
+            </h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chartInventoryCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 7: Return Punctuality -->
+          <div class="chart-card" style="grid-column: 1 / -1;">
+            <h4>
+              <span>🎯 Return Punctuality Breakdown</span>
+              <span style="font-size:11px; color:var(--accent-rose); font-weight:600;">On-Time vs Late</span>
+            </h4>
+            <div class="chart-canvas-wrap" style="max-height: 260px;">
+              <canvas id="chartPunctualityCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytical Data Tables (Pandas Aggregations) -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>🏆</span> Top Borrowed Books Ranking (Pandas)</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="popularBooksReportTable">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Author</th>
+                  <th>Times Borrowed</th>
+                  <th>Current Stock</th>
+                </tr>
+              </thead>
+              <tbody id="popularBooksReportBody">
+                <tr><td colspan="6" style="text-align:center; padding:20px;">Loading report...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>📂</span> Category Circulation Summary (Pandas)</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="categorySummaryTable">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Titles in Catalogue</th>
+                  <th>Available Inventory</th>
+                  <th>Total Times Borrowed</th>
+                  <th>Circulation Share</th>
+                </tr>
+              </thead>
+              <tbody id="categorySummaryBody">
+                <tr><td colspan="5" style="text-align:center; padding:20px;">Loading category summary...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title"><span>📅</span> Monthly Borrowing Aggregates (Pandas)</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="monthlyTrendsTable">
+              <thead>
+                <tr>
+                  <th>Year-Month</th>
+                  <th>Total Loans</th>
+                  <th>Returned</th>
+                  <th>Active / Pending</th>
+                  <th>Overdue</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyTrendsBody">
+                <tr><td colspan="5" style="text-align:center; padding:20px;">Loading monthly trends...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Register Borrower Modal -->
+<div class="modal-overlay" id="addBorrowerModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Register New Borrower</h3>
+      <button class="modal-close-btn" onclick="closeModal('addBorrowerModal')">✕</button>
+    </div>
+    <form id="addBorrowerForm" onsubmit="handleAddBorrowerSubmit(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="newBorrowerName">Borrower Full Name</label>
+          <input type="text" id="newBorrowerName" class="form-control" placeholder="e.g. Sarah Connor" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newBorrowerRoll">Roll No / Student ID</label>
+          <input type="text" id="newBorrowerRoll" class="form-control" placeholder="e.g. CS-2025-089" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('addBorrowerModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitAddBorrower">Register</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Return Book Modal -->
+<div class="modal-overlay" id="returnBookModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Confirm Book Return</h3>
+      <button class="modal-close-btn" onclick="closeModal('returnBookModal')">✕</button>
+    </div>
+    <form id="returnBookForm" onsubmit="handleReturnSubmit(event)">
+      <input type="hidden" id="returnLoanId">
+      <div class="modal-body">
+        <p id="returnModalBookTitle" style="font-weight:700; font-size:15px; margin-bottom:4px; color:var(--text-main);"></p>
+        <p id="returnModalBorrowerInfo" style="font-size:13px; color:var(--text-muted); margin-bottom:16px;"></p>
+        
+        <div class="form-group">
+          <label class="form-label" for="returnDateInput">Return Date</label>
+          <input type="date" id="returnDateInput" class="form-control" required>
+        </div>
+        <p style="font-size:12px; color:var(--text-dim);">
+          Inventory copies for this book will be automatically incremented by 1 upon check-in.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancel</button>
+        <button type="submit" class="btn btn-success" id="btnConfirmReturn">Confirm Return & Check-in</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- JavaScript Application Script -->
+<script src="/static/js/app.js"></script>
+</body>
+</html>
