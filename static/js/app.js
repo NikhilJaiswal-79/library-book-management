@@ -104,6 +104,11 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 
 // ==================== API DATA LOADERS ====================
 
@@ -133,11 +138,11 @@ async function loadDashboardData() {
     const kpiRes = await fetch("/api/kpis");
     if (kpiRes.ok) {
       const kpis = await kpiRes.json();
-      document.getElementById("kpiTotalTitles").textContent = kpis.total_titles;
-      document.getElementById("kpiAvailableCopies").textContent = `${kpis.available_copies} copies in stock`;
-      document.getElementById("kpiActiveLoans").textContent = kpis.active_loans;
-      document.getElementById("kpiOverdueLoans").textContent = kpis.overdue_loans;
-      document.getElementById("kpiBorrowers").textContent = kpis.registered_borrowers;
+      setText("kpiTotalTitles", kpis.total_titles);
+      setText("kpiAvailableCopies", `${kpis.available_copies} copies in stock`);
+      setText("kpiActiveLoans", kpis.active_loans);
+      setText("kpiOverdueLoans", kpis.overdue_loans);
+      setText("kpiBorrowers", kpis.registered_borrowers);
 
       // Update sidebar badge
       const overdueBadge = document.getElementById("overdueBadge");
